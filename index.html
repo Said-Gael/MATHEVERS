@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MATHVERSE · Etapa 0 · Prueba de incrustación</title>
+<style>
+:root{
+  --mv-bg:#070B1F; --mv-bg-2:#0E1533; --mv-surface:#141C3F; --mv-line:#26305F;
+  --mv-blue:#2F5BFF; --mv-violet:#7C5CFF; --mv-cyan:#5CE1FF;
+  --mv-text:#F4F6FF; --mv-text-2:#A9B1D6; --mv-ok:#6EE7A8; --mv-warn:#FFC857;
+  --mv-display:"Space Grotesk","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mv-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--mv-bg);color:var(--mv-text);font:400 1rem/1.6 var(--mv-body);overflow:auto}
+.app{min-height:100%;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0}
+.stage{position:relative;background:radial-gradient(120% 90% at 30% 20%,#17205A 0%,var(--mv-bg) 65%);display:flex;flex-direction:column;min-height:320px}
+.stage canvas{flex:1;width:100%;min-height:240px;display:block}
+.title{padding:20px 24px 0}
+.title h1{font:600 clamp(1.4rem,4vw,2.2rem)/1.1 var(--mv-display);letter-spacing:-.02em}
+.title p{color:var(--mv-text-2);font-size:.9rem;margin-top:4px}
+.ctrl{padding:12px 24px 20px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.ctrl label{font-size:.85rem;color:var(--mv-text-2);display:flex;align-items:center;gap:10px;min-height:44px}
+input[type=range]{width:160px;accent-color:var(--mv-violet);height:44px}
+button{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--mv-line);background:var(--mv-surface);color:var(--mv-text);font:500 .9rem var(--mv-body);cursor:pointer}
+button:hover{border-color:var(--mv-violet)}
+:focus-visible{outline:2px solid var(--mv-cyan);outline-offset:2px}
+.panel{background:var(--mv-bg-2);border-left:1px solid var(--mv-line);padding:20px 24px}
+.panel h2{font:600 1.05rem var(--mv-display);margin-bottom:4px}
+.panel>p{color:var(--mv-text-2);font-size:.85rem;margin-bottom:14px}
+ul{list-style:none;padding:0}
+li{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:10px 0;border-top:1px solid var(--mv-line);font-size:.88rem}
+li .st{font:600 .8rem var(--mv-display);padding:2px 8px;border-radius:6px;align-self:start;background:#1B2552;color:var(--mv-text-2);min-width:52px;text-align:center}
+li .st.ok{background:#12372C;color:var(--mv-ok)}
+li .st.warn{background:#3B2F10;color:var(--mv-warn)}
+li small{grid-column:2;color:var(--mv-text-2);font-size:.78rem}
+.eq{font:italic 1.05rem var(--mv-display);color:var(--mv-cyan);margin:14px 0 0;padding-top:12px;border-top:1px solid var(--mv-line)}
+@media (max-width:768px){
+  .app{grid-template-columns:1fr}
+  .panel{border-left:0;border-top:1px solid var(--mv-line)}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="stage" aria-labelledby="t">
+    <div class="title">
+      <h1 id="t">Un hipercubo, proyectado</h1>
+      <p>Un cubo de 4 dimensiones rotando, visto como sombra en 2D.</p>
+    </div>
+    <canvas id="cv" role="img" aria-describedby="desc"></canvas>
+    <p id="desc" class="sr">Animación de un teseracto: 16 vértices y 32 aristas de un cubo de cuatro dimensiones, proyectados en el plano mientras rotan. El control deslizante ajusta la velocidad y el botón pausa el movimiento.</p>
+    <div class="ctrl">
+      <label>Velocidad <input id="sp" type="range" min="0" max="100" value="35" aria-label="Velocidad de rotación"></label>
+      <button id="pp" type="button" aria-pressed="false">Pausar</button>
+    </div>
+  </section>
+
+  <aside class="panel" aria-labelledby="d">
+    <h2 id="d">Diagnóstico de incrustación</h2>
+    <p>Abre esta página dentro de Google Sites (móvil y escritorio) y anota qué cambia.</p>
+    <ul id="checks"></ul>
+    <p class="eq" aria-label="Número de vértices y aristas de un cubo de n dimensiones">V = 2ⁿ,&nbsp; A = n·2ⁿ⁻¹&nbsp;&nbsp;→&nbsp; n = 4: 16 y 32</p>
+  </aside>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Diagnóstico ---------- */
+  var list=document.getElementById("checks");
+  function add(label,state,note){
+    var li=document.createElement("li");
+    var s=document.createElement("span");s.className="st "+state;
+    s.textContent=state==="ok"?"OK":state==="warn"?"Revisar":"—";
+    var t=document.createElement("span");t.textContent=label;
+    li.appendChild(s);li.appendChild(t);
+    if(note){var n=document.createElement("small");n.textContent=note;li.appendChild(n);}
+    list.appendChild(li);return li;
+  }
+  var framed=false;try{framed=window.self!==window.top;}catch(e){framed=true;}
+  add("Dentro de un iframe",framed?"ok":"warn",framed?"La incrustación funciona.":"Abierto directamente; incrústalo para probar.");
+  var vp=add("Tamaño visible","",""),vpn=document.createElement("small");vp.appendChild(vpn);
+  function size(){vpn.textContent=innerWidth+" × "+innerHeight+" px · DPR "+(devicePixelRatio||1);}
+  size();addEventListener("resize",size);
+  var ls=false;try{localStorage.setItem("mv","1");localStorage.removeItem("mv");ls=true;}catch(e){}
+  add("localStorage",ls?"ok":"warn",ls?"Disponible dentro del iframe.":"Bloqueado: el progreso no se guardará.");
+  var fontLi=add("Fuentes Space Grotesk / Inter","warn","Aún no autoalojadas: se usa la fuente del sistema.");
+  if(document.fonts&&document.fonts.check){
+    var okF=document.fonts.check('16px "Space Grotesk"')&&document.fonts.check('16px "Inter"');
+    if(okF){fontLi.querySelector(".st").className="st ok";fontLi.querySelector(".st").textContent="OK";fontLi.querySelector("small").textContent="Cargadas.";}
+  }
+  var rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  add("Movimiento reducido",rm?"warn":"ok",rm?"Activo: la animación arranca en pausa.":"No solicitado por el sistema.");
+  add("Pantalla táctil","",("ontouchstart" in window||navigator.maxTouchPoints>0)?"Sí":"No");
+  add("Navegador","",navigator.userAgent.replace(/\(.*?\)/g,"").trim().slice(0,70));
+
+  /* ---------- Teseracto ---------- */
+  var cv=document.getElementById("cv"),cx=cv.getContext("2d");
+  var V=[],E=[],i,j;
+  for(i=0;i<16;i++)V.push([i&1?1:-1,i&2?1:-1,i&4?1:-1,i&8?1:-1]);
+  for(i=0;i<16;i++)for(j=i+1;j<16;j++){var d=i^j;if(d&&!(d&(d-1)))E.push([i,j]);}
+  var a=0,paused=rm,last=0,W=0,H=0;
+  var sp=document.getElementById("sp"),pp=document.getElementById("pp");
+  function fit(){
+    var r=cv.getBoundingClientRect(),k=Math.min(devicePixelRatio||1,2);
+    W=r.width;H=r.height;cv.width=W*k;cv.height=H*k;cx.setTransform(k,0,0,k,0,0);draw();
+  }
+  function proj(p){
+    var c=Math.cos(a),s=Math.sin(a),c2=Math.cos(a*.7),s2=Math.sin(a*.7);
+    var x=p[0]*c-p[3]*s,w=p[0]*s+p[3]*c;
+    var y=p[1]*c2-p[2]*s2,z=p[1]*s2+p[2]*c2;
+    var f4=1/(2.6-w),X=x*f4,Y=y*f4,Z=z*f4;
+    var f3=1/(2.2-Z*2.2),u=Math.min(W,H)*.62;
+    return [W/2+X*f3*u*2.2,H/2+Y*f3*u*2.2,w];
+  }
+  function draw(){
+    cx.clearRect(0,0,W,H);
+    var P=V.map(proj);
+    cx.lineWidth=1.6;
+    E.forEach(function(e){
+      var p=P[e[0]],q=P[e[1]],t=(p[2]+q[2]+4)/8;
+      cx.strokeStyle="rgba("+Math.round(47+45*t)+","+Math.round(91+134*t)+",255,"+(.35+.5*t).toFixed(2)+")";
+      cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(q[0],q[1]);cx.stroke();
+    });
+    P.forEach(function(p){cx.fillStyle="#5CE1FF";cx.beginPath();cx.arc(p[0],p[1],2.6,0,6.283);cx.fill();});
+  }
+  function tick(t){
+    if(!paused){a+=((t-last)/1000)*(sp.value/100)*1.2;draw();}
+    last=t;requestAnimationFrame(tick);
+  }
+  function label(){pp.textContent=paused?"Reanudar":"Pausar";pp.setAttribute("aria-pressed",String(paused));}
+  pp.addEventListener("click",function(){paused=!paused;label();});
+  sp.addEventListener("input",function(){if(paused){a+=.05;draw();}});
+  document.addEventListener("visibilitychange",function(){last=performance.now();});
+  addEventListener("resize",fit);label();fit();requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
